@@ -1,3 +1,4 @@
+// @ts-ignore
 import mainWorld from "./content-main-world?script&module";
 const PREFIX = "MBAP";
 const LOG_PREFIX = "My Binance Average Price:";
@@ -17,7 +18,7 @@ script.addEventListener("load", async (a) => {
   console.log("found tab");
   //  1. click on My Trades
   // @ts-ignore
-  document.querySelector("#tab-1")?.click();
+  tab.click();
   await new Promise((resolve) => setTimeout(resolve, 1500));
   // Get trades
   const selector = "div[name='trades'] .css-13kwpu1 > div:last-child .trade-list-item.trade-list-item-buy";
@@ -66,7 +67,10 @@ script.addEventListener("load", async (a) => {
 
   console.log(`${LOG_PREFIX} total cost: ${totalCost}`);
   console.log(`${LOG_PREFIX} total amount: ${totalAmount}`);
-  const averagePrice = totalCost / totalAmount;
+  let averagePrice = totalCost / totalAmount;
+
+  // round to 5 decimals
+  averagePrice = Math.round((totalCost / totalAmount) * 100000) / 100000;
   console.log(`${LOG_PREFIX} average price: ${averagePrice}`);
   const tabParent = document.querySelector("#tab-1")?.parentElement;
   // remove old span
@@ -133,6 +137,7 @@ const createDiv = (averagePrice: number) => {
   const div = document.createElement("div");
   div.id = "averagePrice";
   div.className = "css-t02s9j active";
+  div.style.userSelect = "all";
   //   div.textContent = `Average Price: ${averagePrice}`;
   div.textContent = `${averagePrice}`;
   return div;
