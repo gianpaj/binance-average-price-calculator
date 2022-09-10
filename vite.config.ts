@@ -12,7 +12,7 @@ import pkg from "./package.json";
  */
 const manifest = defineManifest({
   manifest_version: 3,
-  name: "CRX React Devtools",
+  name: "My Binance Average Price Calculator",
   version: pkg.version,
   content_scripts: [
     {
