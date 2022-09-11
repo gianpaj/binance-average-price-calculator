@@ -17,7 +17,7 @@ const manifest = defineManifest({
   content_scripts: [
     {
       js: ["src/content-script.ts"],
-      matches: ["<all_urls>"],
+      matches: ["https://www.binance.com/en/trade/*"],
       run_at: "document_start",
     },
   ],
