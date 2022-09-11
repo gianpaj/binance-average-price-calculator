@@ -10,3 +10,4 @@ Chrome extension that calculates the average price of a cryptocurrency on Binanc
 ## TODO
 
 - [ ] calculate in the Order History section
+- [ ] re-calculate when switching between coins
