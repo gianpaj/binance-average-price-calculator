@@ -30,12 +30,13 @@ script.addEventListener("load", async () => {
   }
   await sleep(500);
 
-  if (noRecentBuyOrSellTrades()) {
+  if (noBuyOrSellInMyTrades()) {
     console.log("no trades");
   } else {
     // Get trades from My Trades tab
     myTrades()
   }
+  addRefreshButtonToMyTrades();
 
   // 2. Order History
 
@@ -111,6 +112,30 @@ const createDiv = (averagePrice: number) => {
   return div;
 };
 
+const addRefreshButtonToMyTrades = () => {
+  const tabParent = document.querySelector("#tab-1")?.parentElement;
+  const refreshButton = document.createElement("button");
+  refreshButton.textContent = "🔄";
+
+  // reset default browser style
+  refreshButton.style.backgroundColor = "transparent";
+  refreshButton.style.border = "none";
+  refreshButton.style.outline = "none";
+  refreshButton.style.cursor = "pointer";
+  refreshButton.style.paddingLeft = "0";
+  refreshButton.style.margin = "0";
+
+  refreshButton.onclick = () => {
+    console.log("refreshing");
+    // remove all checkbox elements
+    document.querySelectorAll(`input.${PREFIX}-buy, input.${PREFIX}-sell`).forEach((checkbox) => {
+      checkbox.remove();
+    });
+    myTrades();
+  };
+  tabParent?.append(refreshButton);
+};
+
 const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
@@ -119,7 +144,7 @@ const XPathSearch = (x: string) => {
   return document.evaluate(x, document, null, XPathResult.ANY_TYPE, null).iterateNext();
 };
 
-const noRecentBuyOrSellTrades = () => document.querySelector('.emptyLine')?.textContent;
+const noBuyOrSellInMyTrades = () => document.querySelector('.emptyLine')?.textContent;
 
 const myTrades = async () => {
   const buySelector = "div[name='trades'] .css-13kwpu1 > div:last-child .trade-list-item.trade-list-item-buy";
@@ -135,7 +160,7 @@ const myTrades = async () => {
     sellTrades = document.querySelectorAll(sellSelector);
     retry++;
     // console.log(`${LOG_PREFIX} no trades found, retrying... ${retry}`);
-    if (retry > 10 || noRecentBuyOrSellTrades()) {
+    if (retry > 10 || noBuyOrSellInMyTrades()) {
       console.log("No trades found on 'My Trades' tab");
       return;
     }
