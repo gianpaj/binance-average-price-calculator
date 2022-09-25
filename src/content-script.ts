@@ -39,8 +39,12 @@ script.addEventListener("load", async () => {
   addRefreshButtonToMyTrades();
 
   // 2. Order History
+  await sleep(500);
+  orderHistory('1 Month');
 
-  orderHistory('1 Month')
+  await sleep(500);
+
+  addRefreshButtonToOrderHistory();
 });
 
 script.addEventListener("error", (err) => {
@@ -53,28 +57,23 @@ document.head.append(script);
 // filter
 // -url:https://bin.bnbstatic.com/static-br/static/chunks/bnc~pl~1.bc97a5ce.js -url:https://o529943.ingest.sentry.io/api/5684836/envelope/?sentry_key=98cacb9d46384ac4abd400761cf7002e&sentry_version=7 -url:https://bin.bnbstatic.com/static/fiat-activation-ui/fiat-activation-widget.9d3e3cf.js -url:https://www.binance.com/en/trade/ANC_USDT?theme=dark&type=isolated -url:https://api.saasexch.com/bapi/fe/usd/sa.gif?project=binance -url:https://bin.bnbstatic.com/static-br/static/chunks/common2.fd3a05d1.js
 
-const createCheckbox = (i: number, type: string) => {
+const createCheckbox = (type: string) => {
   var newCheckBox = document.createElement("input");
-  newCheckBox.onchange = () => {
-    console.log("checkbox changed", i);
-    recalculateAveragePrice(type);
-  };
   newCheckBox.type = "checkbox";
   newCheckBox.className = `${PREFIX}-${type}`;
-  newCheckBox.id = "i" + i; // need unique Ids!
   // newCheckBox.value = check_value[count] + '<br/>';
   return newCheckBox;
 };
 
-const recalculateAveragePrice = (type: string) => {
+const recalculateMyTrades = (type: string) => {
   let totalCost = 0;
   let totalAmount = 0;
+  // if there are any checked checkboxes of the opposite type, uncheck them
+  document.querySelectorAll(`input.${PREFIX}-${type === 'buy-my-trades' ? 'sell-my-trades' : 'buy-my-trades'}[type=checkbox]:checked`).forEach((checkbox) =>
+    (checkbox as HTMLInputElement).checked = false
+  );
   // get all checked checkboxes
   document.querySelectorAll(`input.${PREFIX}-${type}[type=checkbox]:checked`).forEach((checkbox) => {
-    // if there are any checked checkboxes of the opposite type, uncheck them
-    document.querySelectorAll(`input.${PREFIX}-${type === 'buy' ? 'sell' : 'buy'}[type=checkbox]:checked`).forEach((checkbox) => {
-      (checkbox as HTMLInputElement).checked = false;
-    });
 
     const price = checkbox.nextSibling?.textContent;
     const amount = checkbox.nextSibling?.nextSibling?.textContent;
@@ -90,21 +89,21 @@ const recalculateAveragePrice = (type: string) => {
     console.log("totalCost", totalCost);
     console.log("totalAmount", totalAmount);
 
-    let averagePrice = totalCost / totalAmount;
     // round to 5 decimals
-    averagePrice = Math.round((totalCost / totalAmount) * 100000) / 100000;
+    const averagePrice = Math.round((totalCost / totalAmount) * 100000) / 100000;
     console.log(`${LOG_PREFIX} average price: ${averagePrice}`);
     const tabParent = document.querySelector("#tab-1")?.parentElement;
-    // remove old span
-    document.getElementById("averagePrice")?.remove();
-    const div = createDiv(averagePrice);
+    const div = createPriceDiv(averagePrice, 'averagePrice');
     tabParent?.append(div);
   });
 };
 
-const createDiv = (averagePrice: number) => {
+const createPriceDiv = (averagePrice: number, id: string) => {
+  // remove old div
+  document.getElementById(id)?.remove();
+
   const div = document.createElement("div");
-  div.id = "averagePrice";
+  div.id = id;
   div.className = "css-t02s9j active";
   div.style.userSelect = "all";
   //   div.textContent = `Average Price: ${averagePrice}`;
@@ -114,23 +113,12 @@ const createDiv = (averagePrice: number) => {
 
 const addRefreshButtonToMyTrades = () => {
   const tabParent = document.querySelector("#tab-1")?.parentElement;
-  const refreshButton = document.createElement("button");
-  refreshButton.textContent = "🔄";
-
-  // reset default browser style
-  refreshButton.style.backgroundColor = "transparent";
-  refreshButton.style.border = "none";
-  refreshButton.style.outline = "none";
-  refreshButton.style.cursor = "pointer";
-  refreshButton.style.paddingLeft = "0";
-  refreshButton.style.margin = "0";
+  const refreshButton = createRefreshButton()
 
   refreshButton.onclick = () => {
     console.log("refreshing");
     // remove all checkbox elements
-    document.querySelectorAll(`input.${PREFIX}-buy, input.${PREFIX}-sell`).forEach((checkbox) => {
-      checkbox.remove();
-    });
+    document.querySelectorAll(`input.${PREFIX}-buy-my-trades, input.${PREFIX}-sell-my-trades`).forEach((checkbox) => checkbox.remove());
     myTrades();
   };
   tabParent?.append(refreshButton);
@@ -168,16 +156,21 @@ const myTrades = async () => {
 
   // append checkboxes to the buy trades
   for (let i = 0; i < buyTrades.length; i++) {
-    const checkbox = createCheckbox(i, 'buy');
+    const checkbox = createCheckbox('buy-my-trades');
+    checkbox.onchange = () => {
+      recalculateMyTrades('buy-my-trades');
+    };
     buyTrades[i].prepend(checkbox);
   }
 
   // append checkboxes to the sell trades
   for (let i = 0; i < sellTrades.length; i++) {
-    const checkbox = createCheckbox(i, 'sell');
+    const checkbox = createCheckbox('sell-my-trades');
+    checkbox.onchange = () => {
+      recalculateMyTrades('sell-my-trades');
+    };
     sellTrades[i].prepend(checkbox);
   }
-
 
   const prices = document.querySelectorAll(`${buySelector} .price`);
 
@@ -212,21 +205,17 @@ const myTrades = async () => {
 
   console.log(`${LOG_PREFIX} BUY total cost: ${totalCost}`);
   console.log(`${LOG_PREFIX} BUY total amount: ${totalAmount}`);
-  let averagePrice = totalCost / totalAmount;
 
   // round to 5 decimals
-  averagePrice = Math.round((totalCost / totalAmount) * 100000) / 100000;
+  const averagePrice = Math.round((totalCost / totalAmount) * 100000) / 100000;
   console.log(`${LOG_PREFIX} BUY average price: ${averagePrice}`);
+
   const tabParent = document.querySelector("#tab-1")?.parentElement;
-  // remove old span
-  document.getElementById("averagePrice")?.remove();
-  const div = createDiv(averagePrice);
+  const div = createPriceDiv(averagePrice, 'averagePrice');
   tabParent?.append(div);
 };
 
 const orderHistory = async (timeRange = '1 Month') => {
-  await sleep(500);
-
   let orderHistoryElem = document.querySelector(orderHistorySelector);
 
   while (!orderHistoryElem) {
@@ -270,41 +259,110 @@ const orderHistory = async (timeRange = '1 Month') => {
     await sleep(100);
     table = document.querySelectorAll('div[data-testid="tradeInfoTable"]')[1];
   }
-  // console.log(table);
 
-  const buyOrders = 'div[data-bn-type="text"]:nth-child(5)';
-  let rows = table.querySelectorAll(buyOrders);
+  const orders = 'div[data-bn-type="text"]:nth-child(5)';
+  let rows = table.querySelectorAll(orders);
   while (rows.length === 0) {
     // console.log("waiting for rows");
     await sleep(100);
-    rows = table.querySelectorAll(buyOrders);
+    rows = table.querySelectorAll(orders);
     // console.log(rows);
   }
-
-  // console.log("waiting for more rows");
-  await sleep(300);
-  rows = table.querySelectorAll(buyOrders);
 
   let totalCost = 0;
   let totalAmount = 0;
 
   // find Buy orders
-  table.querySelectorAll(buyOrders)
+  table.querySelectorAll(orders)
     .forEach((div, i) => {
-      if (div.textContent != "Buy") {
-        return;
+      // if (div.textContent != "Buy") {
+      //   return;
+      // }
+      // add checkbox at the beginning of the row
+      let checkbox;
+      if (div.textContent == "Buy") {
+        checkbox = createCheckbox('buy-order-history');
+        checkbox.onchange = () => {
+          recalculateOrderHistory('buy-order-history');
+        };
+      } else if (div.textContent == "Sell") {
+        checkbox = createCheckbox('sell-order-history');
+        checkbox.onchange = () => {
+          recalculateOrderHistory('sell-order-history');
+        };
       }
+      if (checkbox instanceof HTMLInputElement) {
+        div.parentElement?.prepend(checkbox);
+      }
+
       const averagePrice: any = div.nextSibling?.textContent?.replace(",", "");
       const executed: any = div.nextSibling?.nextSibling?.nextSibling?.textContent?.replace(",", "");
-      console.log('averagePrice', averagePrice);
       if (averagePrice && executed) {
         totalCost += parseFloat(averagePrice) * parseFloat(executed);
         totalAmount += parseFloat(executed);
       }
-      // div.closest('.css-vqlpio')
     });
-  let averagePrice = totalCost / totalAmount;
   // round to 5 decimals
-  averagePrice = Math.round((totalCost / totalAmount) * 100000) / 100000;
+  const averagePrice = Math.round((totalCost / totalAmount) * 100000) / 100000;
   console.log(`${LOG_PREFIX} BUY average price: ${averagePrice}`);
+  const tabParent = document.querySelector("#tab-1")?.parentElement;
+  const div = createPriceDiv(averagePrice, 'averagePrice');
+  tabParent?.append(div);
+}
+
+const recalculateOrderHistory = (type: string) => {
+  // uncheck all the opposite checkboxes
+  const oppositeType = type === 'buy-order-history' ? 'sell-order-history' : 'buy-order-history';
+  document.querySelectorAll(`input.${PREFIX}-${oppositeType}[type="checkbox"]:checked`).forEach((checkbox) => {
+    (checkbox as HTMLInputElement).checked = false;
+  });
+
+  let totalCost = 0;
+  let totalAmount = 0;
+  document.querySelectorAll(`input.${PREFIX}-${type}[type=checkbox]:checked`).forEach((checkbox) => {
+
+    const total: any = checkbox.parentElement?.querySelector('div[data-bn-type="text"]:nth-child(11)')?.textContent?.replace(",", "");
+    const executed: any = checkbox.parentElement?.querySelector('div[data-bn-type="text"]:nth-child(9)')?.textContent?.replace(",", "");
+
+    totalCost += parseFloat(total);
+    totalAmount += parseFloat(executed);
+  })
+  console.log('totalCost', totalCost);
+  console.log('totalAmount', totalAmount);
+  // round to 5 decimals
+  const averagePrice = Math.round((totalCost / totalAmount) * 100000) / 100000;
+  console.log(`${LOG_PREFIX} ${type} average price: ${averagePrice}`);
+  // const tabParent = document.querySelector("#tab-1")?.parentElement;
+
+  const dataTable = document.querySelectorAll('[data-testid="DataTable"]')[1].querySelector('div > div');
+  const div = createPriceDiv(averagePrice, 'averagePrice-order-history');
+  dataTable?.append(div);
+}
+
+
+const addRefreshButtonToOrderHistory = () => {
+  const refreshButton = createRefreshButton()
+
+  refreshButton.onclick = () => {
+    console.log("refreshing order history");
+    orderHistory();
+  };
+  const dataTable = document.querySelectorAll('[data-testid="DataTable"]')[1].querySelector('div > div');
+  dataTable?.append(refreshButton);
+};
+
+
+const createRefreshButton = () => {
+  const refreshButton = document.createElement("button");
+  refreshButton.textContent = "🔄";
+
+  // reset default browser style
+  refreshButton.style.backgroundColor = "transparent";
+  refreshButton.style.border = "none";
+  refreshButton.style.outline = "none";
+  refreshButton.style.cursor = "pointer";
+  refreshButton.style.paddingLeft = "0";
+  refreshButton.style.margin = "0";
+
+  return refreshButton;
 }
