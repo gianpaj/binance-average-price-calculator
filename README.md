@@ -6,7 +6,7 @@ Chrome extension that calculates the average price of a cryptocurrency on Binanc
 
 <img width="320" src="./screenshot1.png" />
 
-<img height="200" src="./screenshot2.png" />
+<img src="./screenshot2.png" />
 
 ## TODO
 

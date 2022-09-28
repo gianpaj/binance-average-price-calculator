@@ -215,7 +215,7 @@ const myTrades = async () => {
   tabParent?.append(div);
 };
 
-const orderHistory = async (timeRange = '1 Month') => {
+const orderHistory = async (timeRange?: string) => {
   let orderHistoryElem = document.querySelector(orderHistorySelector);
 
   while (!orderHistoryElem) {
@@ -246,11 +246,13 @@ const orderHistory = async (timeRange = '1 Month') => {
       }
     }
   }
-  // const timeRange ='1 Week'
-  const timeRangeTab = XPathSearch(`//div[text() = "${timeRange}"]`);
-  if (timeRangeTab instanceof HTMLElement) {
-    timeRangeTab?.click();
-    await sleep(100);
+
+  if (timeRange) {
+    const timeRangeTab = XPathSearch(`//div[text() = "${timeRange}"]`);
+    if (timeRangeTab instanceof HTMLElement) {
+      timeRangeTab?.click();
+      await sleep(100);
+    }
   }
 
   let table = document.querySelectorAll('div[data-testid="tradeInfoTable"]')[1];
